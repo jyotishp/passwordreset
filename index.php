@@ -19,10 +19,11 @@
 //   echo "Sorry, access denied!";
 //   exit(0);
 // }
-
+require_once 'config.php';
 
 $dirtyBit = false;
 $cleanBit = false;
+$adminBit = false;
 $error_messages = array();
 $requestID = md5(uniqid(rand(), true));
 openlog("Password Reset", LOG_PID, LOG_LOCAL0);
@@ -78,7 +79,7 @@ function generateLANPassword($password) {
 
 function generateCAPassword($password) {
     $update = array(
-      'userPassword' => HashPassword($password)
+      'userPassword' => $password
     );
     return $update;
 }
@@ -122,27 +123,28 @@ if (isset($_POST['newLANPassword1']) and isset($_POST['newLANPassword2'])) {
     }
 }
 
-if (isset($_POST['uid']) and isset($_POST['_domain']) and isset($_POST['currentPassword'])) { 
+if (isset($_POST['uid']) and isset($_POST['_domain']) and isset($_POST['currentPassword'])) {
     $domain = trim(str_replace(array('?', '+', 'string:'), '', $_POST['_domain']));
     $email = $_POST['uid'].$domain;
     $baseDn = "dc=iiit,dc=ac,dc=in";
-    if (strcmp($domain, "") === 0) { 
+    if (strcmp($domain, "") === 0) {
         $filter = '(mailForwardingAddress='.$email.')';
     } else {
-        $filter = '(mail='.$email.')'; 
+        $filter = '(mail='.$email.')';
     }
     // I don't think anyone would bother attempting injection here. It would make no sense. Also using mail=<mail> because duplicate uid for few people.
-    
-    logToSyslog("Request Email : $email"); 
-    // Logs must be rotated to prevent overflow attacks.... Who attacks local server anyways? 
+
+    logToSyslog("Request Email : $email");
+    // Logs must be rotated to prevent overflow attacks.... Who attacks local server anyways?
 
     if (!$dirtyBit) {
         $ds = ldap_connect("ldap.iiit.ac.in", 389);
     } else {
         $ds = false;
     }
-    if (!$ds) { 
+    if (!$ds) {
         logToSyslog("Unable to connect to LDAP server");
+        array_push($error_messages, "Passwords Do Not Meet Requirement");
         $dirtyBit = true;
     }
 
@@ -153,6 +155,7 @@ if (isset($_POST['uid']) and isset($_POST['_domain']) and isset($_POST['currentP
     }
     if (!$opt) {
         logToSyslog("Unable to set LDAPv3");
+        array_push($error_messages, "Unable to set LDAPv3. Please report on help portal.");
         $dirtyBit = true;
     }
 
@@ -163,6 +166,7 @@ if (isset($_POST['uid']) and isset($_POST['_domain']) and isset($_POST['currentP
     }
     if (!$tls) {
         logToSyslog("Unable to STARTTLS");
+        array_push($error_messages, "Insecure channel. Please report on help portal.");
         $dirtyBit = true;
     }
 
@@ -174,8 +178,7 @@ if (isset($_POST['uid']) and isset($_POST['_domain']) and isset($_POST['currentP
     if (!$r) {
         logToSyslog("Unable to Anon Bind");
         $dirtyBit = true;
-        logToSyslog("Unable to get Dn for First Entry");
-        logToSyslog("Unable to get Dn for First Entry");
+        array_push($error_messages, "Unable to bind. Please report on help portal.");
     }
 
     if (!$dirtyBit) {
@@ -186,6 +189,7 @@ if (isset($_POST['uid']) and isset($_POST['_domain']) and isset($_POST['currentP
     if (!$sr) {
         logToSyslog("Unable to Anon Search");
         $dirtyBit = true;
+        array_push($error_messages, "Can't locate your account, please recheck username.");
     }
 
     if (!$dirtyBit) {
@@ -196,6 +200,7 @@ if (isset($_POST['uid']) and isset($_POST['_domain']) and isset($_POST['currentP
     if (!$entry) {
         logToSyslog("Unable to Fetch First Entry");
         $dirtyBit = true;
+        array_push($error_messages, "Can't locate your account, please recheck username.");
     }
 
     if (!$dirtyBit) {
@@ -203,6 +208,7 @@ if (isset($_POST['uid']) and isset($_POST['_domain']) and isset($_POST['currentP
     } else {
         logToSyslog("Unable to get Dn for First Entry");
         $dn = false;
+        array_push($error_messages, "Search failed. Please report on help portal.");
     }
     if (!$dn) {
         $dirtyBit = true;
@@ -213,21 +219,52 @@ if (isset($_POST['uid']) and isset($_POST['_domain']) and isset($_POST['currentP
     } else {
         $r = false;
     }
+
     if (!$r) {
-        logToSyslog("Unable to Bind on the found Dn");
-        $dirtyBit = true;
-    } 
+        logToSyslog("Unable to Bind on the found Dn - Maybe expired password");
+        // lets try password reset by admin bind, maybe password is expired?
+        global $adminDN, $adminPass;
+        exec('ldappasswd -D '.escapeshellarg($adminDN).' '.escapeshellarg($dn).' -a '.escapeshellarg($_POST['currentPassword']).' -s '.escapeshellarg($_POST['newCAPassword1']).' -w '.escapeshellarg($adminPass).' -Z', $output, $code);
+        if($code) {
+            // non-zero results code, hence error :(
+            logToSyslog("Admin bind and password change failed");
+            $dirtyBit = True;
+            if(count($output) > 0) {
+                if(strpos($output[0], "Invalid credentials") > 0) {
+                    logToSyslog("Invalid credentials.");
+                    array_push($error_messages, "Please recheck your current LDAP password.");
+                }
+                else {
+                    logToSyslog("Failed. ".$output[0]);
+                    array_push($error_messages, "Failed. ".$output[0]);
+                }
+            }
+        }
+        else {
+            // successfully changed and unlocked the account, lets for user bind, and self password change
+            logToSyslog("Admin bind and changed successfully. Lets re-change using user bind.");
+            $adminBit = True;
+            $r = ldap_bind($ds, $dn, $_POST['newCAPassword1']);
+            if (!$r) {
+                array_push($error_messages, "Password changed, but verification failed.");
+                $dirtyBit = True;
+            }
+        }
+    }
 
     if (!$dirtyBit) {
-        $mod = ldap_mod_replace($ds, $dn, $update); 
-        // As of php-ldap source, validation is carried out by php of the form IS_ARRAY(update), 
-        // and if fails, the error is thrown, and logged. 
+        $mod = ldap_mod_replace($ds, $dn, $update);
+        // As of php-ldap source, validation is carried out by php of the form IS_ARRAY(update),
+        // and if fails, the error is thrown, and logged.
         // The raw POST is the only thing capable of something like this. The rest is handled in JS / CSS.
     } else {
         $mod = false;
-    } 
+    }
     if (!$mod) {
         logToSyslog("Unable to Change Password");
+        if($adminBit) {
+            array_push($error_messages, "Password changed, but verification failed.");
+        }
         $dirtyBit = true;
     } else {
         $cleanBit = true;
@@ -284,7 +321,7 @@ closelog();
               <form name="CAPasswordResetForm" flex style="padding: 20px" action="./?ca-reset" method="POST">
                 <div layout="row">
                   <md-input-container flex>
-                    <label>Email</label>
+                    <label>Username</label>
                     <input name="uid" ng-model="pr.uid" required>
                   </md-input-container>
                   <md-input-container flex>
@@ -310,11 +347,11 @@ closelog();
                 </md-input-container>
               </form>
             </md-tab>
-            <md-tab label="LAN Password">
+            <md-tab label="802.1X Password">
               <form name="LANPasswordResetForm" flex style="padding: 20px" action="./?lan-reset" method="POST">
                 <div layout="row">
                   <md-input-container flex>
-                    <label>Email</label>
+                    <label>Username</label>
                     <input name="uid" ng-model="pr.uid" required>
                   </md-input-container>
                   <md-input-container flex>
@@ -348,7 +385,8 @@ closelog();
                   <li>Your password must be atleast <b>8 characters long</b>.</li>
                   <li>Your password must contain atleast <b>one uppercase letter</b>.</li>
                   <li>Your password must contain atleast <b>one lowercase letter</b>.</li>
-                  <li>Your password must contain atleast <b>one number</b>.</li>
+                    <li>Your password must contain atleast <b>one number</b>.</li>
+                    <li>Your password must contain atleast <b>one special character</b>.</li>
                 </ol>
             </div>
           </div>
