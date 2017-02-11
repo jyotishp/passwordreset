@@ -140,7 +140,6 @@ if (isset($_POST['uid']) and isset($_POST['_domain']) and isset($_POST['currentP
     }
     if (!$ds) {
         logToSyslog("Unable to connect to LDAP server");
-        array_push($error_messages, "Passwords Do Not Meet Requirement");
         $dirtyBit = true;
     }
 
@@ -240,7 +239,7 @@ if (isset($_POST['uid']) and isset($_POST['_domain']) and isset($_POST['currentP
                 $dirtyBit = True;
             }
         }
-    } else {
+    } else if($_POST['currentPassword'] == '') {
         $dirtyBit = True;
     }
 
