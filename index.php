@@ -19,10 +19,11 @@
 //   echo "Sorry, access denied!";
 //   exit(0);
 // }
-
+require_once 'config.php';
 
 $dirtyBit = false;
 $cleanBit = false;
+$adminBit = false;
 $error_messages = array();
 $requestID = md5(uniqid(rand(), true));
 openlog("Password Reset", LOG_PID, LOG_LOCAL0);
@@ -35,7 +36,7 @@ function logToSyslog($message) {
 function valid_pass($candidate) {
     $r1 = '/[A-Z]/';  //Uppercase
     $r2 = '/[a-z]/';  //lowercase
-    $r3 = '/[0-9]/';  //numbers
+    $r3 = '/[0-9]/';  //numb3rs
 
     if(preg_match_all($r1, $candidate, $o) < 1) return false;
     if(preg_match_all($r2, $candidate, $o) < 1) return false;
@@ -122,23 +123,24 @@ if (isset($_POST['newLANPassword1']) and isset($_POST['newLANPassword2'])) {
     }
 }
 
-if (isset($_POST['uid']) and isset($_POST['_domain']) and isset($_POST['currentPassword'])) { 
+if (isset($_POST['uid']) and isset($_POST['_domain']) and isset($_POST['currentPassword'])) {
     $domain = trim(str_replace(array('?', '+', 'string:'), '', $_POST['_domain']));
     $email = $_POST['uid'].$domain;
     $baseDn = "dc=iiit,dc=ac,dc=in";
     $filter = '(mail='.$email.')'; 
     // I don't think anyone would bother attempting injection here. It would make no sense. Also using mail=<mail> because duplicate uid for few people.
-    
-    logToSyslog("Request Email : $email"); 
-    // Logs must be rotated to prevent overflow attacks.... Who attacks local server anyways? 
+
+    logToSyslog("Request Email : $email");
+    // Logs must be rotated to prevent overflow attacks.... Who attacks local server anyways?
 
     if (!$dirtyBit) {
         $ds = ldap_connect("ldap.iiit.ac.in", 389);
     } else {
         $ds = false;
     }
-    if (!$ds) { 
+    if (!$ds) {
         logToSyslog("Unable to connect to LDAP server");
+        array_push($error_messages, "Passwords Do Not Meet Requirement");
         $dirtyBit = true;
     }
 
@@ -149,6 +151,7 @@ if (isset($_POST['uid']) and isset($_POST['_domain']) and isset($_POST['currentP
     }
     if (!$opt) {
         logToSyslog("Unable to set LDAPv3");
+        array_push($error_messages, "Unable to set LDAPv3. Please report on help portal.");
         $dirtyBit = true;
     }
 
@@ -159,6 +162,7 @@ if (isset($_POST['uid']) and isset($_POST['_domain']) and isset($_POST['currentP
     }
     if (!$tls) {
         logToSyslog("Unable to STARTTLS");
+        array_push($error_messages, "Insecure channel. Please report on help portal.");
         $dirtyBit = true;
     }
 
@@ -169,6 +173,7 @@ if (isset($_POST['uid']) and isset($_POST['_domain']) and isset($_POST['currentP
     }
     if (!$r) {
         logToSyslog("Unable to Anon Bind");
+        array_push($error_messages, "Unable to bind. Please report on help portal.");
         $dirtyBit = true;
     }
 
@@ -180,6 +185,7 @@ if (isset($_POST['uid']) and isset($_POST['_domain']) and isset($_POST['currentP
     if (!$sr) {
         logToSyslog("Unable to Anon Search");
         $dirtyBit = true;
+        array_push($error_messages, "Can't locate your account, please recheck username.");
     }
 
     if (!$dirtyBit) {
@@ -190,6 +196,7 @@ if (isset($_POST['uid']) and isset($_POST['_domain']) and isset($_POST['currentP
     if (!$entry) {
         logToSyslog("Unable to Fetch First Entry");
         $dirtyBit = true;
+        array_push($error_messages, "Can't locate your account, please recheck username.");
     }
 
     if (!$dirtyBit) {
@@ -197,6 +204,7 @@ if (isset($_POST['uid']) and isset($_POST['_domain']) and isset($_POST['currentP
     } else {
         logToSyslog("Unable to get Dn for First Entry");
         $dn = false;
+        array_push($error_messages, "Can't locate your account, please check username.");
     }
     if (!$dn) {
         $dirtyBit = true;
@@ -207,21 +215,47 @@ if (isset($_POST['uid']) and isset($_POST['_domain']) and isset($_POST['currentP
     } else {
         $r = false;
     }
+
     if (!$r) {
         logToSyslog("Unable to Bind on the found Dn");
-        $dirtyBit = true;
-    } 
+        // Lets try password reset by admin bind, maybe password is expired?
+        global $adminDN, $adminPass;
+        exec('ldappasswd -D '.escapeshellarg($adminDN).' '.escapeshellarg($dn).' -a '.escapeshellarg($_POST['currentPassword']).' -s '.escapeshellarg($_POST['newCAPassword1']).' -w '.escapeshellarg($adminPass).' -Z', $output, $code);
+        if($code) {
+            // Non-zero results code, hence error :(
+            logToSyslog("Admin Bind and Password Change Failed");
+            $dirtyBit = True;
+            logToSyslog("Failed. ".implode("\n", $output));
+            if (isset($output[0])) {
+            	array_push($error_messages, "Failed. ".$output[0]);
+            } else {
+                array_push($error_messages, "Failed with unknown reason, please report this error");
+            }
+        } else {
+            // successfully changed and unlocked the account, let us user bind, and self-password-change
+            logToSyslog("Admin Bind and Password Change Successful");
+            $adminBit = True;
+            $r = ldap_bind($ds, $dn, $_POST['newCAPassword1']);
+            if (!$r) {
+                array_push($error_messages, "Password changed, but verification failed.");
+                $dirtyBit = True;
+            }
+        }
+    }
 
     if (!$dirtyBit) {
-        $mod = ldap_mod_replace($ds, $dn, $update); 
-        // As of php-ldap source, validation is carried out by php of the form IS_ARRAY(update), 
-        // and if fails, the error is thrown, and logged. 
+        $mod = ldap_mod_replace($ds, $dn, $update);
+        // As of php-ldap source, validation is carried out by php of the form IS_ARRAY(update),
+        // and if fails, the error is thrown, and logged.
         // The raw POST is the only thing capable of something like this. The rest is handled in JS / CSS.
     } else {
         $mod = false;
-    } 
+    }
     if (!$mod) {
         logToSyslog("Unable to Change Password");
+        if($adminBit) {
+            array_push($error_messages, "Password changed, but verification failed.");
+        }
         $dirtyBit = true;
     } else {
         $cleanBit = true;
@@ -303,7 +337,7 @@ closelog();
                 </md-input-container>
               </form>
             </md-tab>
-            <md-tab label="802.1x Password">
+            <md-tab label="802.1X Password">
               <form name="LANPasswordResetForm" flex style="padding: 20px" action="./?lan-reset" method="POST">
                 <div layout="row">
                   <md-input-container flex>
