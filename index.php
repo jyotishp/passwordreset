@@ -36,7 +36,7 @@ function logToSyslog($message) {
 function valid_pass($candidate) {
     $r1 = '/[A-Z]/';  //Uppercase
     $r2 = '/[a-z]/';  //lowercase
-    $r3 = '/[0-9]/';  //numbers
+    $r3 = '/[0-9]/';  //numb3rs
 
     if(preg_match_all($r1, $candidate, $o) < 1) return false;
     if(preg_match_all($r2, $candidate, $o) < 1) return false;
@@ -208,7 +208,7 @@ if (isset($_POST['uid']) and isset($_POST['_domain']) and isset($_POST['currentP
     } else {
         logToSyslog("Unable to get Dn for First Entry");
         $dn = false;
-        array_push($error_messages, "Search failed. Please report on help portal.");
+        array_push($error_messages, "Can't locate your account, please check username.");
     }
     if (!$dn) {
         $dirtyBit = true;
@@ -221,28 +221,23 @@ if (isset($_POST['uid']) and isset($_POST['_domain']) and isset($_POST['currentP
     }
 
     if (!$r) {
-        logToSyslog("Unable to Bind on the found Dn - Maybe expired password");
-        // lets try password reset by admin bind, maybe password is expired?
+        logToSyslog("Unable to Bind on the found Dn");
+        // Lets try password reset by admin bind, maybe password is expired?
         global $adminDN, $adminPass;
         exec('ldappasswd -D '.escapeshellarg($adminDN).' '.escapeshellarg($dn).' -a '.escapeshellarg($_POST['currentPassword']).' -s '.escapeshellarg($_POST['newCAPassword1']).' -w '.escapeshellarg($adminPass).' -Z', $output, $code);
         if($code) {
-            // non-zero results code, hence error :(
-            logToSyslog("Admin bind and password change failed");
+            // Non-zero results code, hence error :(
+            logToSyslog("Admin Bind and Password Change Failed");
             $dirtyBit = True;
-            if(count($output) > 0) {
-                if(strpos($output[0], "Invalid credentials") > 0) {
-                    logToSyslog("Invalid credentials.");
-                    array_push($error_messages, "Please recheck your current LDAP password.");
-                }
-                else {
-                    logToSyslog("Failed. ".$output[0]);
-                    array_push($error_messages, "Failed. ".$output[0]);
-                }
+            logToSyslog("Failed. ".implode("\n", $output));
+            if (isset($output[0])) {
+            	array_push($error_messages, "Failed. ".$output[0]);
+            } else {
+                array_push($error_messages, "Failed with unknown reason, please report this error");
             }
-        }
-        else {
-            // successfully changed and unlocked the account, lets for user bind, and self password change
-            logToSyslog("Admin bind and changed successfully. Lets re-change using user bind.");
+        } else {
+            // successfully changed and unlocked the account, let us user bind, and self-password-change
+            logToSyslog("Admin Bind and Password Change Successful");
             $adminBit = True;
             $r = ldap_bind($ds, $dn, $_POST['newCAPassword1']);
             if (!$r) {
