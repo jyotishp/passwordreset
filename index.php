@@ -216,20 +216,19 @@ if (isset($_POST['uid']) and isset($_POST['_domain']) and isset($_POST['currentP
         $r = false;
     }
 
-    if (!$r) {
+    if (!$r && $_POST['currentPassword'] != '') {
         logToSyslog("Unable to Bind on the found Dn");
         // Lets try password reset by admin bind, maybe password is expired?
         global $adminDN, $adminPass;
-        exec('ldappasswd -D '.escapeshellarg($adminDN).' '.escapeshellarg($dn).' -a '.escapeshellarg($_POST['currentPassword']).' -s '.escapeshellarg($_POST['newCAPassword1']).' -w '.escapeshellarg($adminPass).' -Z', $output, $code);
+        exec('ldappasswd -D '.escapeshellarg($adminDN).' '.escapeshellarg($dn).' -a '.escapeshellarg($_POST['currentPassword']).' -s '.escapeshellarg($_POST['newCAPassword1']).' -w '.escapeshellarg($adminPass).' -ZZ', $output, $code);
         if($code) {
             // Non-zero results code, hence error :(
-            logToSyslog("Admin Bind and Password Change Failed");
+            logToSyslog("Admin Bind and Password Change Failed - ".ldap_err2str($code));
             $dirtyBit = True;
-            logToSyslog("Failed. ".implode("\n", $output));
-            if (isset($output[0])) {
-            	array_push($error_messages, "Failed. ".$output[0]);
+            if ($code == 49) {
+                array_push($error_messages, "Incorrect old password");
             } else {
-                array_push($error_messages, "Failed with unknown reason, please report this error");
+                array_push($error_messages, "Failed with result code ".$code);
             }
         } else {
             // successfully changed and unlocked the account, let us user bind, and self-password-change
@@ -241,6 +240,8 @@ if (isset($_POST['uid']) and isset($_POST['_domain']) and isset($_POST['currentP
                 $dirtyBit = True;
             }
         }
+    } else {
+        $dirtyBit = True;
     }
 
     if (!$dirtyBit) {
