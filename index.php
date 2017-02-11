@@ -78,7 +78,7 @@ function generateLANPassword($password) {
 
 function generateCAPassword($password) {
     $update = array(
-      'userPassword' => HashPassword($password)
+      'userPassword' => $password
     );
     return $update;
 }
@@ -126,11 +126,7 @@ if (isset($_POST['uid']) and isset($_POST['_domain']) and isset($_POST['currentP
     $domain = trim(str_replace(array('?', '+', 'string:'), '', $_POST['_domain']));
     $email = $_POST['uid'].$domain;
     $baseDn = "dc=iiit,dc=ac,dc=in";
-    if (strcmp($domain, "") === 0) { 
-        $filter = '(mailForwardingAddress='.$email.')';
-    } else {
-        $filter = '(mail='.$email.')'; 
-    }
+    $filter = '(mail='.$email.')'; 
     // I don't think anyone would bother attempting injection here. It would make no sense. Also using mail=<mail> because duplicate uid for few people.
     
     logToSyslog("Request Email : $email"); 
@@ -174,8 +170,6 @@ if (isset($_POST['uid']) and isset($_POST['_domain']) and isset($_POST['currentP
     if (!$r) {
         logToSyslog("Unable to Anon Bind");
         $dirtyBit = true;
-        logToSyslog("Unable to get Dn for First Entry");
-        logToSyslog("Unable to get Dn for First Entry");
     }
 
     if (!$dirtyBit) {
@@ -250,7 +244,6 @@ closelog();
 <html lang="en" ng-app="PasswordReset">
   <head>
     <link rel="stylesheet" href="./static/css/angular-material.min.css">
-    <meta name="viewport" content="initial-scale=1" />
     <meta charset="UTF-8" />
     <title>Reset Your Password</title>
   </head>
@@ -284,7 +277,7 @@ closelog();
               <form name="CAPasswordResetForm" flex style="padding: 20px" action="./?ca-reset" method="POST">
                 <div layout="row">
                   <md-input-container flex>
-                    <label>Email</label>
+                    <label>Username</label>
                     <input name="uid" ng-model="pr.uid" required>
                   </md-input-container>
                   <md-input-container flex>
@@ -310,11 +303,11 @@ closelog();
                 </md-input-container>
               </form>
             </md-tab>
-            <md-tab label="LAN Password">
+            <md-tab label="802.1x Password">
               <form name="LANPasswordResetForm" flex style="padding: 20px" action="./?lan-reset" method="POST">
                 <div layout="row">
                   <md-input-container flex>
-                    <label>Email</label>
+                    <label>Username</label>
                     <input name="uid" ng-model="pr.uid" required>
                   </md-input-container>
                   <md-input-container flex>
@@ -349,6 +342,7 @@ closelog();
                   <li>Your password must contain atleast <b>one uppercase letter</b>.</li>
                   <li>Your password must contain atleast <b>one lowercase letter</b>.</li>
                   <li>Your password must contain atleast <b>one number</b>.</li>
+                  <li>Your password must contain atleast <b>one special character</b>.</li>
                 </ol>
             </div>
           </div>

@@ -9,7 +9,6 @@
         self.domains = [
             '@students.iiit.ac.in',
             '@research.iiit.ac.in',
-            '@alumni.iiit.ac.in',
             '@iiit.ac.in',
         ];
         self.domain = self.domains[0];
