@@ -222,11 +222,19 @@ if (isset($_POST['uid']) and isset($_POST['_domain']) and isset($_POST['currentP
         exec('ldappasswd -D '.escapeshellarg($adminDN).' '.escapeshellarg($dn).' -a '.escapeshellarg($_POST['currentPassword']).' -s '.escapeshellarg($_POST['newCAPassword1']).' -w '.escapeshellarg($adminPass).' -ZZ', $output, $code);
         if($code) {
             // Non-zero results code, hence error :(
-            logToSyslog("Admin Bind and Password Change Failed - ".ldap_err2str($code));
+            logToSyslog("Admin Bind and Password Change Failed - ".ldap_err2str($code)." (".$code.")");
+            logToSyslog(json_encode($output));
             $dirtyBit = True;
-            if ($code == 49) {
-                array_push($error_messages, "Incorrect old password");
-            } else {
+            try {
+                # $output[0] -> "Result: <something> (error-code)"
+                $error_desc = explode(":", $output[0])[1];
+                if(strpos($error_desc, '(49)') !== false) {
+                    array_push($error_messages, "Incorrect old password.");
+                }
+                else {
+                    array_push($error_messages, "Failed. ".$error_desc);
+                }
+            } catch (Exception $e) {
                 array_push($error_messages, "Failed with result code ".$code);
             }
         } else {
