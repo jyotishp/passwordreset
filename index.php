@@ -260,6 +260,13 @@ if (isset($_POST['uid']) and isset($_POST['_domain']) and isset($_POST['currentP
         $mod = false;
     }
     if (!$mod) {
+        if(!$dirtyBit) {
+            $recent_pass = (ldap_error($ds) == "Constraint violation");
+            if($recent_pass) {
+                array_push($error_messages, "Password has been recently used.");
+                logToSyslog("Password has been recently used.");
+            }
+        }
         logToSyslog("Unable to Change Password");
         if($adminBit) {
             array_push($error_messages, "Password changed, but verification failed.");
@@ -385,6 +392,7 @@ closelog();
                   <li>Your password must contain atleast <b>one lowercase letter</b>.</li>
                   <li>Your password must contain atleast <b>one number</b>.</li>
                   <li>Your password must contain atleast <b>one special character</b>.</li>
+                  <li>Your password must be different from <b>last 2 used passwords</b>.</li>
                 </ol>
             </div>
           </div>
