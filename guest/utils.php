@@ -2,11 +2,11 @@
 /*
  * @author: Jyotish P <srisai.poonganam@research.iiit.ac.in>
  *
-*/
+ */
 
 /*
  * Open the log file
-*/
+ */
 openlog("Guest Credentials
 ", LOG_PID, LOG_LOCAL0);
 
@@ -105,8 +105,7 @@ function generateSambaNTPassword($pass){
 }
 
 /*
- * Check if the user belongs to ou=Staff or ou=Faculty
- * Check if the user belongs to L1 access group
+ * Add Guest credentials to LDAP
  */
 function add_ldap_entry($email,
                         $password,
