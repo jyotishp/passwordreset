@@ -125,6 +125,7 @@ function add_ldap_entry($email,
 
 		$base_dn = "ou=Users,dc=iiit,dc=ac,dc=in";
 		$filter = '(mail='.$email.')';
+		date_default_timezone_set('Asia/Kolkata');
 
 		// $uid = explode('@', $guest_mail)[0];
 		# Using uniqid() to avoid uid clashes but looks like an overkill
@@ -138,7 +139,7 @@ function add_ldap_entry($email,
 				'mail' => $guest_mail,
 				# sambaSID will be used for keeping track of expiry time
 				# Adding custom fields like passwordExpiry or accountExpiry throw error
-				'sambaSID' => (new DateTime())->getTimestamp() + $expiry_time * 3600,
+				'sambaSID' => strtotime(date("Y-m-d H:i:s")) + $expiry_time * 3600,
 				'sambaNTPassword' => $hashed_password,
 				'objectclass' => ['organizationalPerson', 'top', 'inetOrgPerson', 'person', 'SambaSamAccount', 'inetUser'],
 				'description' => 'Added on ' . date("F j, Y, g:i a") . ' by ' . $email . '.',
