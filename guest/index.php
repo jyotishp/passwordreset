@@ -1,12 +1,10 @@
 <?php
 /*
- *
  * @author: Jyotish P <srisai.poonganam@research.iiit.ac.in>
- *
  *
 */
 
-$allowed_ips=array('127.0.0.1');
+$allowed_ips=array('127.0.0.1', '10.1.36.98');
 
 if (!in_array($_SERVER['REMOTE_ADDR'], $allowed_ips)) {
 	echo "Sorry, access denied!";
@@ -16,31 +14,31 @@ if (!in_array($_SERVER['REMOTE_ADDR'], $allowed_ips)) {
 require_once '../config.php';
 require_once 'utils.php';
 
-$posted_data = false;
-$email = $_POST['iiit_mail'];
-$password = $_POST['password'];
-$first_name = htmlspecialchars($_POST['first_name']);
-$last_name = htmlspecialchars($_POST['last_name']);
-$guest_mail = $_POST['mail'];
-$phone = htmlspecialchars($_POST['phone']);
-$expiry_time = htmlspecialchars($_POST['expiry_time']);
+if ($_POST) {
+	$email = $_POST['iiit_mail'];
+	$password = $_POST['password'];
+	$first_name = htmlspecialchars($_POST['first_name']);
+	$last_name = htmlspecialchars($_POST['last_name']);
+	$guest_mail = $_POST['mail'];
+	$phone = htmlspecialchars($_POST['phone']);
+	$expiry_time = htmlspecialchars($_POST['expiry_time']);
 
-if (
-	$email !== '' and
-	$password !== '' and
-	$first_name !== '' and
-	$last_name !== '' and
-	$guest_mail !== '' and
-	$phone !== ''
-) {
-	$result = add_ldap_entry( $email,
-		              $password,
-		              $first_name,
-		              $last_name,
-		              $guest_mail,
-		              $phone,
-								  $expiry_time);
-	$posted_data = true;
+	if (
+		$email !== '' and
+		$password !== '' and
+		$first_name !== '' and
+		$last_name !== '' and
+		$guest_mail !== '' and
+		$phone !== ''
+	) {
+		$result = add_ldap_entry( $email,
+			              $password,
+			              $first_name,
+			              $last_name,
+			              $guest_mail,
+			              $phone,
+									  $expiry_time);
+	}
 }
 
 ?>
@@ -105,7 +103,7 @@ if (
 								<div class="wizard-header">
 									<h3 class="wizard-title">Guest Credentials Generator</h3>
 									<h5>The credentials can only be used to access IIIT-H network</h5>
-									<?php if ($posted_data) { ?>
+									<?php if ($_POST) { ?>
 									<h5 style="color: <?= ($result)? 'green">Credentials mailed!' : 'red">Something went wrong :(' ?></h5>
 									<?php } ?>
 								</div>

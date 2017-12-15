@@ -44,12 +44,12 @@ $(document).ready(function(){
 
     // Code for the Validator
     $.validator.addMethod( "valid_iiit_email", function( value, element ) {
-      var valid_email = new RegExp('^[a-zA-Z0-9.]+@iiit.ac.in$');
+      var valid_email = new RegExp('^[a-zA-Z0-9.]+@((research|students).)iiit.ac.in$');
       if (valid_email.test(value)) {
         return true
       }
       else {
-        return true;
+        return false;
       }
     }, "Not valid IIIT-H account!" );
 
