@@ -10,11 +10,11 @@ expired_users=$(ldapsearch -H $ldap_host -x -b "$base_dn" "sambaSID<=`date +%s`"
 
 for user in $expired_users
 do
-  email=`ldapsearch -H $ldap_host -x -b "$base_dn" "uid=$user"`
-  if `ldapdelete -H ldap://ldap.iiit.ac.in -x "uid=$user,$base_din" -D $admin_dn -w $admin_password >/dev/null 2>&1`; then
+  email=`ldapsearch -H $ldap_host -x -b "$base_dn" "uid=$user" mail | grep mail: | awk '{print $2}'`
+  if `ldapdelete -H ldap://ldap.iiit.ac.in -x "uid=$user,$base_dn" -D $admin_dn -w $admin_password >/dev/null 2>&1`; then
     logger --prio-prefix "Guest remover" $email
   else
-    error=$(ldapdelete -H ldap://ldap.iiit.ac.in -x "uid=$user,$base_din" -D $admin_dn -w $admin_password 2>&1)
+    error=$(ldapdelete -H ldap://ldap.iiit.ac.in -x "uid=$user,$base_dn" -D $admin_dn -w $admin_password 2>&1)
     logger --prio-prefix "Guest remover" $error
     echo "$email: $error" | mailx -r "passwordreset@iiit.ac.in" -s "[Error] Failed to delete a user" $to
 fi
