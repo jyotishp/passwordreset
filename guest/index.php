@@ -1,8 +1,8 @@
 <?php
 /*
  *
- * @author: Parth Laxmikant Kolekar <parth.kolekar@students.iiit.ac.in>
- * @version: 1.0.0dev1
+ * @author: Jyotish P <srisai.poonganam@research.iiit.ac.in>
+ *
  *
 */
 
@@ -23,6 +23,7 @@ $first_name = htmlspecialchars($_POST['first_name']);
 $last_name = htmlspecialchars($_POST['last_name']);
 $guest_mail = $_POST['mail'];
 $phone = htmlspecialchars($_POST['phone']);
+$expiry_time = htmlspecialchars($_POST['expiry_time']);
 
 if (
 	$email !== '' and
@@ -37,7 +38,8 @@ if (
 		              $first_name,
 		              $last_name,
 		              $guest_mail,
-		              $phone);
+		              $phone,
+								  $expiry_time);
 	$posted_data = true;
 }
 
@@ -104,11 +106,11 @@ if (
 									<h3 class="wizard-title">Guest Credentials Generator</h3>
 									<h5>The credentials can only be used to access IIIT-H network</h5>
 									<?php if ($posted_data) { ?>
-									<h5 style="color: <?= ($result)? "green>Credentials mailed!" : "red>Someething went wrong :(" ?>"</h5>
+									<h5 style="color: <?= ($result)? 'green">Credentials mailed!' : 'red">Something went wrong :(' ?></h5>
 									<?php } ?>
 								</div>
 								<div class="wizard-navigation">
-									<ul>
+									<ul id="wizard-tabs">
 										<li><a href="#auth" data-toggle="tab">Authorization</a></li>
 										<li><a href="#account" data-toggle="tab">Account Details</a></li>
 										<!-- <li><a href="#address" data-toggle="tab">Address</a></li> -->
@@ -171,15 +173,22 @@ if (
 													</div>
 												</div>
 											</div>
-											<div class="col-sm-6">
+											<div class="col-sm-5">
 												<div class="input-group">
 													<span class="input-group-addon">
-														<i class="material-icons">email</i>
+														<i class="material-icons">alarm_off</i>
 													</span>
 													<div class="form-group label-floating">
-														<label class="control-label">Email <small>(required)</small></label>
-														<input name="mail" type="email" class="form-control">
-														<small>Password will be mailed to this address</small>
+														<label class="control-label">Expiry (in Hours) #</label>
+														<input id="slider" type="range" min="1" max="48" step="1" value="24" class="slider-success">
+													</div>
+												</div>
+											</div>
+											<div class="col-sm-1">
+												<div class="input-group">
+													<div class="form-group label-floating">
+														<label class="control-label"><small>(required)</small></label>
+														<input id="expiry_time" name="expiry_time" type="tel" value="24" class="form-control">
 													</div>
 												</div>
 											</div>
@@ -191,6 +200,18 @@ if (
 													<div class="form-group label-floating">
 														<label class="control-label">Mobile # <small>(required)</small></label>
 														<input name="phone" type="tel" class="form-control">
+													</div>
+												</div>
+											</div>
+											<div class="col-sm-12">
+												<div class="input-group">
+													<span class="input-group-addon">
+														<i class="material-icons">email</i>
+													</span>
+													<div class="form-group label-floating">
+														<label class="control-label">Email <small>(required)</small></label>
+														<input id="mail" name="mail" type="email" class="form-control">
+														<small>Password will be mailed to this address</small>
 													</div>
 												</div>
 											</div>

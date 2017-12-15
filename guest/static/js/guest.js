@@ -23,6 +23,22 @@ $(document).ready(function(){
 
     $.material.init();
 
+    $('#password').keydown(function(event){
+      if(event.keyCode == 13) {
+        event.preventDefault();
+        $('#wizard-tabs a[href="#account"]').tab('show')
+        return false;
+      }
+    });
+
+    $('#slider').mousemove(function() {
+      $('#expiry_time').val($('#slider').val());
+    });
+
+    $('#expiry_time').keyup(function() {
+      $('#slider').val($('#expiry_time').val());
+    });
+
     /*  Activate the tooltips      */
     $('[rel="tooltip"]').tooltip();
 
@@ -62,6 +78,11 @@ $(document).ready(function(){
           required: true,
           minlength: 6,
           digits: true,
+        },
+        expiry_time: {
+          required: true,
+          digits: true,
+          max: 48,
         }
       },
 
