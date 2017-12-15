@@ -1,5 +1,5 @@
 <?php
-/* 
+/*
  *
  * @author: Parth Laxmikant Kolekar <parth.kolekar@students.iiit.ac.in>
  * @version: 1.0.0dev1
@@ -7,12 +7,39 @@
 */
 
 $allowed_ips=array('127.0.0.1');
+
 if (!in_array($_SERVER['REMOTE_ADDR'], $allowed_ips)) {
 	echo "Sorry, access denied!";
 	exit(0);
 }
 
 require_once '../config.php';
+require_once 'utils.php';
+
+$posted_data = false;
+$email = $_POST['iiit_mail'];
+$password = $_POST['password'];
+$first_name = htmlspecialchars($_POST['first_name']);
+$last_name = htmlspecialchars($_POST['last_name']);
+$guest_mail = $_POST['mail'];
+$phone = htmlspecialchars($_POST['phone']);
+
+if (
+	$email !== '' and
+	$password !== '' and
+	$first_name !== '' and
+	$last_name !== '' and
+	$guest_mail !== '' and
+	$phone !== ''
+) {
+	$result = add_ldap_entry( $email,
+		              $password,
+		              $first_name,
+		              $last_name,
+		              $guest_mail,
+		              $phone);
+	$posted_data = true;
+}
 
 ?>
 
@@ -36,11 +63,11 @@ require_once '../config.php';
 	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/latest/css/font-awesome.min.css" />
 
 	<!-- CSS Files -->
-	<link href="static/css/bootstrap.min.css" rel="stylesheet" />
-	<link href="static/css/material-bootstrap-wizard.css" rel="stylesheet" />
+	<link href="/guest/static/css/bootstrap.min.css" rel="stylesheet" />
+	<link href="/guest/static/css/material-bootstrap-wizard.css" rel="stylesheet" />
 
 	<!-- CSS Just for demo purpose, don't include it in your project -->
-	<link href="static/css/guest.css" rel="stylesheet" />
+	<link href="/guest/static/css/guest.css" rel="stylesheet" />
 </head>
 
 <body>
@@ -49,8 +76,8 @@ require_once '../config.php';
 		<a href="https://iiit.ac.in">
 			 <div class="logo-container">
 				<div class="logo">
-					<img src="static/img/new_logo.png">
-				</div><!-- 
+					<img src="/guest/static/img/new_logo.png">
+				</div><!--
 				<div class="brand">
 					IIIT Hyderabad
 				</div> -->
@@ -70,23 +97,56 @@ require_once '../config.php';
 					<!--      Wizard container        -->
 					<div class="wizard-container">
 						<div class="card wizard-card" data-color="green" id="wizardProfile">
-							<form action="" method="">
+							<form action="/guest" method="POST">
 						<!--        You can switch " data-color="purple" "  with one of the next bright colors: "green", "orange", "red", "blue"       -->
 
 								<div class="wizard-header">
 									<h3 class="wizard-title">Guest Credentials Generator</h3>
 									<h5>The credentials can only be used to access IIIT-H network</h5>
+									<?php if ($posted_data) { ?>
+									<h5 style="color: <?= ($result)? "green>Credentials mailed!" : "red>Someething went wrong :(" ?>"</h5>
+									<?php } ?>
 								</div>
 								<div class="wizard-navigation">
 									<ul>
-										<li><a href="#about" data-toggle="tab">Account Details</a></li>
-										<!-- <li><a href="#result" data-toggle="tab">Result</a></li> -->
+										<li><a href="#auth" data-toggle="tab">Authorization</a></li>
+										<li><a href="#account" data-toggle="tab">Account Details</a></li>
 										<!-- <li><a href="#address" data-toggle="tab">Address</a></li> -->
 									</ul>
 								</div>
 
 								<div class="tab-content">
-									<div class="tab-pane" id="about">
+									<div class="tab-pane" id="auth">
+										<div class="row">
+											<h4 class="info-text"> Please provide your IIIT-H credentials to proceed</h4>
+											<div class="col-sm-6 col-sm-push-3">
+												<div class="col-sm-12">
+													<div class="input-group">
+														<span class="input-group-addon">
+															<i class="material-icons">account_circle</i>
+														</span>
+														<div class="form-group label-floating">
+														  <label class="control-label">E-Mail <small>(required)</small></label>
+														  <input id="iiit_mail" name="iiit_mail" type="email" class="form-control">
+														</div>
+													</div>
+												</div>
+												<div class="col-sm-12">
+													<div class="input-group">
+														<span class="input-group-addon">
+															<i class="material-icons">security</i>
+														</span>
+														<div class="form-group label-floating">
+														  <label class="control-label">Password <small>(required)</small></label>
+														  <input id="password" name="password" type="password" class="form-control">
+														</div>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+
+									<div class="tab-pane" id="account">
 									  <div class="row">
 											<h4 class="info-text"> Let's start with the basic information (with validation)</h4>
 											<div class="col-sm-6">
@@ -96,7 +156,7 @@ require_once '../config.php';
 													</span>
 													<div class="form-group label-floating">
 													  <label class="control-label">First Name <small>(required)</small></label>
-													  <input name="givenName" type="text" class="form-control">
+													  <input name="first_name" type="text" class="form-control">
 													</div>
 												</div>
 											</div>
@@ -107,7 +167,7 @@ require_once '../config.php';
 													</span>
 													<div class="form-group label-floating">
 													  <label class="control-label">Last Name <small>(required)</small></label>
-													  <input name="sn" type="text" class="form-control">
+													  <input name="last_name" type="text" class="form-control">
 													</div>
 												</div>
 											</div>
@@ -130,19 +190,17 @@ require_once '../config.php';
 													</span>
 													<div class="form-group label-floating">
 														<label class="control-label">Mobile # <small>(required)</small></label>
-														<input name="telephoneNumber" type="tel" class="form-control">
+														<input name="phone" type="tel" class="form-control">
 													</div>
 												</div>
 											</div>
 										</div>
 									</div>
-<!-- 									<div class="tab-pane" id="result">
-									</div> -->
 								</div>
 								<div class="wizard-footer">
 									<div class="pull-right">
 										<input type='button' class='btn btn-next btn-fill btn-success btn-wd' name='next' value='Next' />
-										<input type='button' class='btn btn-finish btn-fill btn-success btn-wd' name='finish' value='Finish' />
+										<input type='submit' class='btn btn-finish btn-fill btn-success btn-wd' name='finish' value='Finish' />
 									</div>
 
 									<div class="pull-left">
@@ -166,14 +224,14 @@ require_once '../config.php';
 
 </body>
 	<!--   Core JS Files   -->
-	<script src="static/js/jquery-2.2.4.min.js" type="text/javascript"></script>
-	<script src="static/js/bootstrap.min.js" type="text/javascript"></script>
-	<script src="static/js/jquery.bootstrap.js" type="text/javascript"></script>
+	<script src="/guest/static/js/jquery-2.2.4.min.js" type="text/javascript"></script>
+	<script src="/guest/static/js/bootstrap.min.js" type="text/javascript"></script>
+	<script src="/guest/static/js/jquery.bootstrap.js" type="text/javascript"></script>
 
 	<!--  Plugin for the Wizard -->
-	<script src="static/js/guest.js"></script>
+	<script src="/guest/static/js/guest.js"></script>
 
 	<!--  More information about jquery.validate here: http://jqueryvalidation.org/	 -->
-	<script src="static/js/jquery.validate.min.js"></script>
+	<script src="/guest/static/js/jquery.validate.min.js"></script>
 
 </html>

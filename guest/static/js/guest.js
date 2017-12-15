@@ -3,13 +3,13 @@
  =========================================================
  * Material Bootstrap Wizard - v1.0.2
  =========================================================
- 
+
  * Product Page: https://www.creative-tim.com/product/material-bootstrap-wizard
  * Copyright 2017 Creative Tim (http://www.creative-tim.com)
  * Licensed under MIT (https://github.com/creativetimofficial/material-bootstrap-wizard/blob/master/LICENSE.md)
- 
+
  =========================================================
- 
+
  * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
  */
 
@@ -27,13 +27,30 @@ $(document).ready(function(){
     $('[rel="tooltip"]').tooltip();
 
     // Code for the Validator
+    $.validator.addMethod( "valid_iiit_email", function( value, element ) {
+      var valid_email = new RegExp('^[a-zA-Z0-9.]+@iiit.ac.in$');
+      if (valid_email.test(value)) {
+        return true
+      }
+      else {
+        return true;
+      }
+    }, "Not valid IIIT-H account!" );
+
     var $validator = $('.wizard-card form').validate({
 		  rules: {
-		    givenName: {
+        iiit_mail: {
+          required: true,
+          email: true,
+          valid_iiit_email: true,
+
+        },
+        password: "required",
+		    first_name: {
 		      required: true,
 		      minlength: 3
 		    },
-		    sn: {
+		    last_name: {
 		      required: true,
 		      minlength: 1
 		    },
@@ -41,12 +58,12 @@ $(document).ready(function(){
 		      required: true,
 		      email: true,
 		    },
-            telephoneNumber: {
-              required: true,
-              minlength: 6,
-              digits: true,
-            }
-        },
+        phone: {
+          required: true,
+          minlength: 6,
+          digits: true,
+        }
+      },
 
         errorPlacement: function(error, element) {
             $(element).parent('div').addClass('has-error');
