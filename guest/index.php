@@ -31,13 +31,15 @@ if ($_POST) {
 		$guest_mail !== '' and
 		$phone !== ''
 	) {
-		$result = add_ldap_entry( $email,
-										$password,
-										$first_name,
-										$last_name,
-										$guest_mail,
-										$phone,
-										$expiry_time);
+		$result = add_ldap_entry(
+				$email,
+				$password,
+				$first_name,
+				$last_name,
+				$guest_mail,
+				$phone,
+				$expiry_time
+			);
 	}
 }
 
@@ -81,21 +83,20 @@ if ($_POST) {
 									<h3 class="wizard-title">Guest Credentials Generator</h3>
 									<h5>The credentials can only be used to access IIIT-H network</h5>
 									<?php if ($_POST) { ?>
-									<h5 style="color: <?= ($result)? 'green">Credentials mailed!' : 'red">Something went wrong :(' ?></h5>
+									<h5 style="color: <?= ($result['result'])? 'green' : 'red'?>"><?= $result['message'] ?></h5>
 									<?php } ?>
 								</div>
 								<div class="wizard-navigation">
 									<ul id="wizard-tabs">
 										<li><a href="#auth" data-toggle="tab">Authorization</a></li>
 										<li><a href="#account" data-toggle="tab">Account Details</a></li>
-										<!-- <li><a href="#address" data-toggle="tab">Address</a></li> -->
 									</ul>
 								</div>
 
 								<div class="tab-content">
 									<div class="tab-pane" id="auth">
 										<div class="row">
-											<h4 class="info-text"> Please provide your IIIT-H credentials to proceed</h4>
+											<h4 class="info-text">Please provide your IIIT-H credentials to proceed</h4>
 											<div class="col-sm-6 col-sm-push-3">
 												<div class="col-sm-12">
 													<div class="input-group">

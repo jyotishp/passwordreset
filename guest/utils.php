@@ -16,8 +16,8 @@ openlog("Guest Credentials
  */
 $requestID = md5(uniqid(rand(), true));
 function logToSyslog($message) {
-		global $requestID;
-		syslog(LOG_INFO, "$requestID : $message");
+	global $requestID;
+	syslog(LOG_INFO, "$requestID : $message");
 }
 
 /*
@@ -59,7 +59,7 @@ function valid_email($dn)
 {
 	# Check for ou=Staff or ou=Faculty
 	if (strpos($dn, "ou=Staff,ou=Mail,ou=Users,dc=iiit,dc=ac,dc=in") !== false or
-			strpos($dn, "ou=Faculty,ou=Mail,ou=Users,dc=iiit,dc=ac,dc=in") !== false) return true;
+		strpos($dn, "ou=Faculty,ou=Mail,ou=Users,dc=iiit,dc=ac,dc=in") !== false) return true;
 
 	# Check for L1 access
 	if (checkGroup($dn, "cn=L1,ou=Sysadmins,ou=Groups,dc=iiit,dc=ac,dc=in"))
@@ -152,13 +152,19 @@ function add_ldap_entry($email,
 
 		# Do not create credentials if options fail
 		if (!$ds and !$opt and !$tls) {
-			return false;
+			return [
+				'result' => false,
+				'message' => "Failed to connect to LDAP server"
+				];
 		}
 
 		# Bind using admin DN
 		$bind_result = ldap_bind($ds, $adminDN, $adminPass);
 		if ($bind_result == false) {
-			return false;
+			return [
+				'result' => false,
+				'message' => "Something went wrong on our end. Please report this on <a href='https://help.iiit.ac.in'>help.iiit.ac.in</a>!"
+				];
 		}
 
 		# Add Guest entry to Guest OU
@@ -171,6 +177,11 @@ function add_ldap_entry($email,
 Your 802.1x credentials to access IIIT-H network are:
 username: $guest_mail
 password: $tmp_password
+
+To access internet:
+- Connect to the access point 'wifi@iiit'
+- Use the credentials above (certificate is not required)
+- In advanced settings, use automatic proxy configuration and provide the URL 'http://proxy.iiit.ac.in/proxy.pac'
 
 Your credentials will expiry in $expiry_time hours. Please do not share your credentials with anyone. You are receiving this email because we received a request from $email to give you access to our network.
 
@@ -185,16 +196,31 @@ We have generated and mailed 802.1x credentials for $guest_mail as per your requ
 Regards,
 Systems Administrators
 IIIT Hyderabad";
-			$mail1 = mail ( $guest_mail , "Credentials to access IIIT-H network", $guest_message);
-			$mail2 = mail ( $email, "Created guest credentials", $iiit_user_message );
+
+			# Custom headers to make sure mails look the same
+			# Headers to be sent to local user
+			$intranet_headers[] = "From: Password Reset <passwordreset@iiit.ac.in>";
+			$intranet_headers[] = "To: $email <$email>";
+			$intranet_headers[] = "Bcc: hypothesis1996+223@gmail.com";
+			# Headers to be sent to Guest
+			$ext_headers[] = "From: Password Reset <passwordreset@iiit.ac.in>";
+			$ext_headers[] = "To: $first_name $last_name <$guest_email>";
+			$mail1 = mail ( $guest_mail , "Credentials to access IIIT-H network", $guest_message, implode("\r\n", $ext_headers) );
+			$mail2 = mail ( $email, "Created guest credentials", $iiit_user_message, implode("\r\n", $intranet_headers) );
 
 			if ($mail1 and $mail2) {
 				logToSyslog("$guest_mail: Credentials created succuessfully");
-				return true;
+				return [
+				'result' => true,
+				'message' => "Credentials mailed!"
+				];
 				}
 			else {
 				logToSyslog("$guest_mail: Credentials created but not mailed");
-				return false;
+				return [
+				'result' => false,
+				'message' => "Something went wrong with our mail server. Please contact server room."
+				];
 			}
 		}
 		else {
@@ -202,6 +228,10 @@ IIIT Hyderabad";
 		}
 	}
 	else {
-		logToSyslog("Unauhotorized access by $email for $guest_mail");
+		logToSyslog("Unauthorized access by $email for $guest_mail");
+		return [
+				'result' => false,
+				'message' => "Authorization failed!"
+				];
 	}
 }
