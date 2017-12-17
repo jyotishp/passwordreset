@@ -1,8 +1,7 @@
 <?php
 /*
  * @author: Jyotish P <srisai.poonganam@research.iiit.ac.in>
- *
-*/
+ */
 
 $allowed_ips=array('127.0.0.1', '10.1.36.98');
 
@@ -22,6 +21,7 @@ if ($_POST) {
 	$guest_mail = $_POST['mail'];
 	$phone = htmlspecialchars($_POST['phone']);
 	$expiry_time = htmlspecialchars($_POST['expiry_time']);
+	$host = htmlspecialchars($_POST['host']);
 
 	if (
 		$email !== '' and
@@ -29,7 +29,8 @@ if ($_POST) {
 		$first_name !== '' and
 		$last_name !== '' and
 		$guest_mail !== '' and
-		$phone !== ''
+		$phone !== '' and
+		$host = ''
 	) {
 		$result = add_ldap_entry(
 				$email,
@@ -38,7 +39,8 @@ if ($_POST) {
 				$last_name,
 				$guest_mail,
 				$phone,
-				$expiry_time
+				$expiry_time,
+				$host
 			);
 	}
 }
@@ -78,7 +80,7 @@ if ($_POST) {
 				<div class="col-sm-8 col-sm-offset-2">
 					<div class="wizard-container">
 						<div class="card wizard-card" data-color="green" id="wizardProfile">
-							<form action="/guest" method="POST">
+							<form action="/guest/index.php" method="POST">
 								<div class="wizard-header">
 									<h3 class="wizard-title">Guest Credentials Generator</h3>
 									<h5>The credentials can only be used to access IIIT-H network</h5>
@@ -179,7 +181,7 @@ if ($_POST) {
 													</div>
 												</div>
 											</div>
-											<div class="col-sm-12">
+											<div class="col-sm-6">
 												<div class="input-group">
 													<span class="input-group-addon">
 														<i class="material-icons">email</i>
@@ -188,6 +190,17 @@ if ($_POST) {
 														<label class="control-label">Email <small>(required)</small></label>
 														<input id="mail" name="mail" type="email" class="form-control">
 														<small>Password will be mailed to this address</small>
+													</div>
+												</div>
+											</div>
+											<div class="col-sm-6">
+												<div class="input-group">
+													<span class="input-group-addon">
+														<i class="material-icons">person</i>
+													</span>
+													<div class="form-group label-floating">
+														<label class="control-label">Host Name <small>(required)</small></label>
+														<input id="host" name="host" type="text" class="form-control">
 													</div>
 												</div>
 											</div>

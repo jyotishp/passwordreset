@@ -83,6 +83,10 @@ $(document).ready(function(){
           required: true,
           digits: true,
           max: 48,
+        },
+        host: {
+          required: true,
+          minlength: 2
         }
       },
 

@@ -1,7 +1,6 @@
 <?php
 /*
  * @author: Jyotish P <srisai.poonganam@research.iiit.ac.in>
- *
  */
 
 /*
@@ -108,16 +107,17 @@ function generateSambaNTPassword($pass){
  * Add Guest credentials to LDAP
  */
 function add_ldap_entry($email,
-												$password,
-												$first_name,
-												$last_name,
-												$guest_mail,
-												$phone,
-												$expiry_time)
+						$password,
+						$first_name,
+						$last_name,
+						$guest_mail,
+						$phone,
+						$expiry_time,
+						$host)
 {
 	if (valid_user($email, $password)) {
 		global $requestID, $adminDN, $adminPass;;
-		logToSyslog("Requested by $email for $guest_mail");
+		logToSyslog("Requested by $email for $guest_mail (Host: $host)");
 
 		# Generate password that should be mailed to Guest E-Mail address
 		$tmp_password = substr(md5(openssl_random_pseudo_bytes(8)), 0, 8);
@@ -142,7 +142,7 @@ function add_ldap_entry($email,
 				'sambaSID' => strtotime(date("Y-m-d H:i:s")) + $expiry_time * 3600,
 				'sambaNTPassword' => $hashed_password,
 				'objectclass' => ['organizationalPerson', 'top', 'inetOrgPerson', 'person', 'SambaSamAccount', 'inetUser'],
-				'description' => 'Added on ' . date("F j, Y, g:i a") . ' by ' . $email . '.',
+				'description' => 'Added on ' . date("F j, Y, g:i a") . ' by ' . $email . '(Host: '. $host .').',
 			];
 
 		# Try connecting to LDAP server
@@ -204,7 +204,7 @@ IIIT Hyderabad";
 			$intranet_headers[] = "Bcc: hypothesis1996+223@gmail.com";
 			# Headers to be sent to Guest
 			$ext_headers[] = "From: Password Reset <passwordreset@iiit.ac.in>";
-			$ext_headers[] = "To: $first_name $last_name <$guest_email>";
+			$ext_headers[] = "To: $first_name $last_name <$guest_mail>";
 			$mail1 = mail ( $guest_mail , "Credentials to access IIIT-H network", $guest_message, implode("\r\n", $ext_headers) );
 			$mail2 = mail ( $email, "Created guest credentials", $iiit_user_message, implode("\r\n", $intranet_headers) );
 
