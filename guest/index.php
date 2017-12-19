@@ -14,12 +14,17 @@ require_once 'cas_auth.php';
 require_once '../config.php';
 require_once 'utils.php';
 
+$user_dn = $user_attributes['LdapAuthenticationHandler.dn'];
+if (! valid_dn($user_dn) ) {
+	session_destroy();
+	phpCAS::logout();
+	exit();
+}
+
 if ($_POST) {
 	$email = $user;
-	$password = $_POST['password'];
-	$user_dn = $attribute['LdapAuthenticationHandler.dn'];
-	$first_name = $user_attributes['FirstName'];
-	$last_name = $user_attributes['LastName'];
+	$first_name = $_POST['first_name'];
+	$last_name = $_POST['last_name'];
 	$guest_mail = $_POST['mail'];
 	$phone = htmlspecialchars($_POST['phone']);
 	$expiry_time = htmlspecialchars($_POST['expiry_time']);
@@ -28,7 +33,6 @@ if ($_POST) {
 
 	if (
 		$email !== '' and
-		$password !== '' and
 		$user_dn !== '' and
 		$first_name !== '' and
 		$last_name !== '' and
@@ -38,7 +42,6 @@ if ($_POST) {
 	) {
 		$result = add_ldap_entry(
 				$email,
-				$password,
 				$user_dn,
 				$first_name,
 				$last_name,
@@ -214,12 +217,13 @@ if ($_POST) {
 								</div>
 								<div class="wizard-footer">
 									<div class="pull-right">
-										<input type='button' class='btn btn-next btn-fill btn-success btn-wd' name='next' value='Next' />
-										<input type='submit' class='btn btn-finish btn-fill btn-success btn-wd' name='finish' value='Finish' />
+										<!-- <input type='button' class='btn btn-next btn-fill btn-success btn-wd' name='next' value='Next' /> -->
+										<input type='submit' class='btn btn-finish btn-fill btn-success btn-wd' name='finish' value='Generate' />
 									</div>
 
 									<div class="pull-left">
-										<input type='button' class='btn btn-previous btn-fill btn-default btn-wd' name='previous' value='Previous' />
+										<!-- <input type='button' class='btn btn-previous btn-fill btn-default btn-wd' name='previous' value='Previous' /> -->
+										<a href="/guest/logout.php" class="btn btn-fill btn-danger btn-wd">Logout</a>
 									</div>
 									<div class="clearfix"></div>
 								</div>

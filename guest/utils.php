@@ -107,7 +107,6 @@ function generateSambaNTPassword($pass){
  * Add Guest credentials to LDAP
  */
 function add_ldap_entry($email,
-						$password,
 						$first_name,
 						$last_name,
 						$guest_mail,
