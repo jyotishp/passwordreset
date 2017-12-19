@@ -3,24 +3,26 @@
  * @author: Jyotish P <srisai.poonganam@research.iiit.ac.in>
  */
 
-$allowed_ips=array('127.0.0.1', '10.1.36.98');
+// $allowed_ips=array('127.0.0.1', '10.1.36.98');
 
-if (!in_array($_SERVER['REMOTE_ADDR'], $allowed_ips)) {
-	echo "Sorry, access denied!";
-	exit(0);
-}
+// if (!in_array($_SERVER['REMOTE_ADDR'], $allowed_ips)) {
+// 	echo "Sorry, access denied!";
+// 	exit(0);
+// }
 
+require_once 'cas_auth.php';
 require_once '../config.php';
 require_once 'utils.php';
 
 if ($_POST) {
-	$email = $_POST['iiit_mail'];
+	$email = $user;
 	$password = $_POST['password'];
-	$first_name = htmlspecialchars($_POST['first_name']);
-	$last_name = htmlspecialchars($_POST['last_name']);
+	$first_name = $user_attributes['FirstName'];
+	$last_name = $user_attributes['LastName'];
 	$guest_mail = $_POST['mail'];
 	$phone = htmlspecialchars($_POST['phone']);
 	$expiry_time = htmlspecialchars($_POST['expiry_time']);
+	$expiry_time = ($expiry_time > 48) ? 48 : $expiry_time;
 	$host = htmlspecialchars($_POST['host']);
 
 	if (
@@ -30,7 +32,7 @@ if ($_POST) {
 		$last_name !== '' and
 		$guest_mail !== '' and
 		$phone !== '' and
-		$host = ''
+		$host !== ''
 	) {
 		$result = add_ldap_entry(
 				$email,
@@ -90,15 +92,15 @@ if ($_POST) {
 								</div>
 								<div class="wizard-navigation">
 									<ul id="wizard-tabs">
-										<li><a href="#auth" data-toggle="tab">Authorization</a></li>
-										<li><a href="#account" data-toggle="tab">Account Details</a></li>
+										<!-- <li><a href="#auth" data-toggle="tab">Authorization</a></li> -->
+										<li style="width: 102%"><a href="#account" data-toggle="tab">Account Details</a></li>
 									</ul>
 								</div>
 
 								<div class="tab-content">
-									<div class="tab-pane" id="auth">
+									<!-- <div class="tab-pane" id="auth">
 										<div class="row">
-											<h4 class="info-text">Please provide your IIIT-H credentials to proceed</h4>
+											<h4 cl_POST['iiit_mail']ass="info-text">Please provide your IIIT-H credentials to proceed</h4>
 											<div class="col-sm-6 col-sm-push-3">
 												<div class="col-sm-12">
 													<div class="input-group">
@@ -124,11 +126,11 @@ if ($_POST) {
 												</div>
 											</div>
 										</div>
-									</div>
+									</div> -->
 
 									<div class="tab-pane" id="account">
 										<div class="row">
-											<h4 class="info-text"> Let's start with the basic information (with validation)</h4>
+											<h4 class="info-text"> Let's start with the basic information of the guest</h4>
 											<div class="col-sm-6">
 												<div class="input-group">
 													<span class="input-group-addon">

@@ -35,6 +35,10 @@ $(document).ready(function(){
       $('#expiry_time').val($('#slider').val());
     });
 
+    $('#slider').change(function() {
+      $('#expiry_time').val($('#slider').val());
+    });
+
     $('#expiry_time').keyup(function() {
       $('#slider').val($('#expiry_time').val());
     });

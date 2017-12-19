@@ -179,7 +179,7 @@ username: $guest_mail
 password: $tmp_password
 
 To access internet:
-- Connect to the access point 'wifi@iiit'
+- Connect to the SSID 'wifi@iiit'
 - Use the credentials above (certificate is not required)
 - In advanced settings, use automatic proxy configuration and provide the URL 'http://proxy.iiit.ac.in/proxy.pac'
 
