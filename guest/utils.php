@@ -54,7 +54,7 @@ function valid_user($email, $password)
  * Check if the user belongs to ou=Staff or ou=Faculty
  * Check if the user belongs to L1 access group
  */
-function valid_email($dn)
+function valid_dn($dn)
 {
 	# Check for ou=Staff or ou=Faculty
 	if (strpos($dn, "ou=Staff,ou=Mail,ou=Users,dc=iiit,dc=ac,dc=in") !== false or
@@ -115,7 +115,7 @@ function add_ldap_entry($email,
 						$expiry_time,
 						$host)
 {
-	if (valid_user($email, $password)) {
+	if (valid_dn($user_dn)) {
 		global $requestID, $adminDN, $adminPass;;
 		logToSyslog("Requested by $email for $guest_mail (Host: $host)");
 

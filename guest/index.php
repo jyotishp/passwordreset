@@ -17,6 +17,7 @@ require_once 'utils.php';
 if ($_POST) {
 	$email = $user;
 	$password = $_POST['password'];
+	$user_dn = $attribute['LdapAuthenticationHandler.dn'];
 	$first_name = $user_attributes['FirstName'];
 	$last_name = $user_attributes['LastName'];
 	$guest_mail = $_POST['mail'];
@@ -28,6 +29,7 @@ if ($_POST) {
 	if (
 		$email !== '' and
 		$password !== '' and
+		$user_dn !== '' and
 		$first_name !== '' and
 		$last_name !== '' and
 		$guest_mail !== '' and
@@ -37,6 +39,7 @@ if ($_POST) {
 		$result = add_ldap_entry(
 				$email,
 				$password,
+				$user_dn,
 				$first_name,
 				$last_name,
 				$guest_mail,
