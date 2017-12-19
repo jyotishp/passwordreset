@@ -1,13 +1,13 @@
 <?php
 
-require_once("/usr/share/php/CAS.php");
+require_once("CAS.php");
 phpCAS::client(CAS_VERSION_2_0,"login.iiit.ac.in",443,"/cas");
 phpCAS::setNoCasServerValidation();
 phpCAS::setExtraCurlOption(CURLOPT_SSLVERSION,1);
 phpCAS::forceAuthentication();
 
 $user = phpCAS::getUser();
-$attributes = phpCAS::getUser();
+$user_attributes = phpCAS::getAttributes();
 
 $arr = split("@",$user);
 $uname = $arr[0];
